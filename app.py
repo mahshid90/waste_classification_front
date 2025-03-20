@@ -54,11 +54,45 @@ if img_file_buffer is not None:
         st.markdown(f"**Prediction:** {prediction}")
         #st.markdown(f"**Prediction:** {prediction}")
 
+        max_key = max(prediction, key=prediction.get)
+        #st.markdown(f"**Type of Trash:** {max_key}")
+
+
+        st.markdown(
+            f"""
+            <div style="
+                border: 4px solid red;
+                padding: 20px;
+                border-radius: 10px;
+                background-color: #ffcccc;
+                text-align: center;
+                font-size: 24px;
+                font-weight: bold;
+                color: red;
+                width: 40%;
+                margin: auto;
+            ">
+                 <strong>Type of Trash:</strong> {max_key}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+
+
+
+
+
+
+
+
+
     else:
         st.markdown(response.text)
         ### Display the image returned by the API
         #st.image(res.content, caption="Image returned from API ☝️")
         st.markdown(response.status_code)
+
 
     #   else:
     #     st.markdown("**Oops**, something went wrong 😓 Please try again.")
