@@ -21,7 +21,7 @@ url ='https://wasteclassification-559456352882.europe-west1.run.app/predict'
 
 
 # App title and description
-st.header('Time to classify your trash! 📸')
+st.header('Time to classify your trash!! 📸')
 st.markdown(''' Some nice text will be added here in the future
             ''')
 
@@ -52,7 +52,7 @@ if img_file_buffer is not None:
         ### Display the image returned by the API
         prediction = response.json()
         st.markdown(f"**Prediction:** {prediction}")
-        st.markdown(f"**Prediction:** {prediction}")
+        #st.markdown(f"**Prediction:** {prediction}")
 
     else:
         st.markdown(response.text)
