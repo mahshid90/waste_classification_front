@@ -1,99 +1,73 @@
 import streamlit as st
 from PIL import Image
 import requests
-import os
 
+# API endpoint
+url = "https://wasteclassification-559456352882.europe-west1.run.app/predict"
 
-# Set page tab display
-st.set_page_config(
-   page_title="Waste classification",
-   page_icon= '🗑️',
-   layout="wide",
-   initial_sidebar_state="expanded",
-)
+st.header("Time to classify your trash!! 📸")
+st.markdown("Some nice text will be added here in the future")
+st.markdown("---")
 
-# Example local Docker container URL
-# url = 'http://api:8000'
-# Example localhost development URL
-# url = 'http://localhost:8000'
-
-url ='https://wasteclassification-559456352882.europe-west1.run.app/predict'
-
-
-# App title and description
-st.header('Time to classify your trash!! 📸')
-st.markdown(''' Some nice text will be added here in the future
-            ''')
+st.markdown("### Give me some trash!👇")
+img_file_buffer = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 
 st.markdown("---")
 
-### Create a native Streamlit file upload input
-st.markdown("### Give me some trash!👇")
-img_file_buffer = st.file_uploader('Upload an image', type=['jpg', 'jpeg', 'png'])
 
 if img_file_buffer is not None:
+    col1, col2 = st.columns(2)
 
-  col1, col2 = st.columns(2)
+    with col1:
+        st.image(Image.open(img_file_buffer), caption="Your lovely piece of waste ☝️")
 
-  with col1:
-    ### Display the image user uploaded
-    st.image(Image.open(img_file_buffer), caption="Your lovely peace of watse ☝️")
+    with col2:
+        # Button to trigger the prediction
+        if st.button("Classify Trash"):
+            with st.spinner("Wait for it..."):
+                # 1. Read the image bytes
+                img_bytes = img_file_buffer.getvalue()
+                files = {"img": img_bytes}
 
-  with col2:
-    with st.spinner("Wait for it..."):
-      ### Get bytes from the file buffer
-      img_bytes = img_file_buffer.getvalue()
-      files = {'img': img_bytes}
-      response = requests.post(url, files=files)
+                # 2. Send image to API
+                response = requests.post(url, files=files)
 
-      ### Make request to  API (stream=True to stream response as bytes)
+                if response.status_code == 200:
+                    # 3. Parse prediction response
+                    prediction = response.json()
+                    max_key = max(prediction, key=prediction.get)
 
-    if response.status_code == 200:
-        ### Display the image returned by the API
-        prediction = response.json()
-        st.markdown(f"**Prediction:** {prediction}")
-        #st.markdown(f"**Prediction:** {prediction}")
+                    # 4. Define color mapping
+                    category_colors = {
+                        "cardboard": "blue",
+                        "glass": "white",
+                        "metal": "yellow",
+                        "paper": "blue",
+                        "plastic": "yellow",
+                        "trash": "black",
+                    }
+                    bin_color = category_colors.get(max_key, "red")
 
-        max_key = max(prediction, key=prediction.get)
-        #st.markdown(f"**Type of Trash:** {max_key}")
+                    # 5. Display top prediction and bin color
+                    st.markdown(
+                        f"""
+                        <div style="display: flex; align-items: center;">
+                            <span style="font-size: 22px;">🏷️ Type of Waste:</span>
+                            <span style="margin-left: 10px; font-size: 22px;"><strong>{max_key.capitalize()}</strong></span>
+                        </div>
+                        <div style="display: flex; align-items: center; margin-top: 10px;">
+                            <span style="font-size: 22px;"">🗑️ Bin color:</span>
+                            <div style="width: 60px; height: 25px; background-color: {bin_color}; margin-left: 10px; border-radius: 5px; border: 1px solid grey;"></div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
 
+                    # 6. Format and display the full prediction table
+                    formatted_predictions = "\n".join([f"| {key.capitalize()} | {value * 100:.0f}% |" for key, value in prediction.items()])
 
-        st.markdown(
-            f"""
-            <div style="
-                border: 4px solid red;
-                padding: 20px;
-                border-radius: 10px;
-                background-color: #ffcccc;
-                text-align: center;
-                font-size: 24px;
-                font-weight: bold;
-                color: red;
-                width: 40%;
-                margin: auto;
-            ">
-                 <strong>Type of Trash:</strong> {max_key}
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-
-
-
-
-
-
-
-
-
-    else:
-        st.markdown(response.text)
-        ### Display the image returned by the API
-        #st.image(res.content, caption="Image returned from API ☝️")
-        st.markdown(response.status_code)
-
-
-    #   else:
-    #     st.markdown("**Oops**, something went wrong 😓 Please try again.")
-    #     print(res.status_code, res.content)
+                    table_header = "| Category | Probability |\n| --- | --- |"
+                    st.markdown("#### Predictions:")
+                    st.markdown(f"{table_header}\n{formatted_predictions}")
+                else:
+                    st.error(f"Error {response.status_code}: {response.text}")
