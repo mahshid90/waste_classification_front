@@ -75,8 +75,8 @@ st.markdown(
 st.markdown('<h1 class="big-header">Classify Your Waste in Seconds</h1>', unsafe_allow_html=True)
 st.markdown('<p class="sub-header">Not sure which bin to use? Upload an image, and we’ll help!</p>', unsafe_allow_html=True)
 
-# File uploader prompt
-st.markdown("### Upload a picture of your waste, and we’ll tell you where it belongs.")
+# File uploader prompt (CENTERED)
+st.markdown('<h3 style="text-align: center;">Upload a picture of your waste, and we’ll tell you where it belongs.</h3>', unsafe_allow_html=True)
 
 # File uploader
 img_file_buffer = st.file_uploader(
@@ -85,6 +85,7 @@ img_file_buffer = st.file_uploader(
     help="Upload an image of your waste to classify"
 )
 
+# Function to display progress bars
 def display_custom_progress_bar(category, percentage, color):
     progress_html = f"""
     <div class="progress-label">{category.capitalize()}: {percentage:.0f}%</div>
@@ -94,6 +95,7 @@ def display_custom_progress_bar(category, percentage, color):
     """
     st.markdown(progress_html, unsafe_allow_html=True)
 
+# Process image
 if img_file_buffer is not None:
     st.markdown("---")
     col_left, col_right = st.columns([1, 1])
@@ -123,13 +125,20 @@ if img_file_buffer is not None:
                         "plastic": "yellow",
                         "trash": "black",
                     }
+
+                    # Sort predictions by probability
                     sorted_preds = sorted(prediction.items(), key=lambda x: x[1], reverse=True)
+
+                    # Store valid progress bars
                     progress_bars = []
                     top_cat, top_prob = sorted_preds[0]
                     progress_bars.append((top_cat, top_prob, category_colors.get(top_cat, "red")))
+
                     for cat, prob in sorted_preds[1:]:
-                        if prob >= 0.15:
+                        if prob >= 0.15:  # Include 15%
                             progress_bars.append((cat, prob, category_colors.get(cat, "red")))
+
+                    # Suggested bin
                     bin_color = category_colors.get(top_cat, "red")
                     st.markdown(f"**This looks like:** {top_cat.capitalize()}")
                     st.markdown(
@@ -141,17 +150,25 @@ if img_file_buffer is not None:
                         """,
                         unsafe_allow_html=True,
                     )
+
+                    # Confidence section
                     st.markdown("### How confident am I?")
                     if len(progress_bars) > 2:
                         st.info("Hmm... I’m not 100% sure, but here are my best guesses!")
                         progress_bars = progress_bars[:3]
+
+                    # Display progress bars
                     for cat, prob, col in progress_bars:
                         display_custom_progress_bar(cat, prob * 100, col)
+
+                    # --- MOVE TABLE TO NEW SECTION BELOW COLUMNS ---
+                    st.markdown("---")  # New section separator
+                    st.markdown("### Full Breakdown:")  # Move title below
                     df = pd.DataFrame({
                         "Category": [k.capitalize() for k in prediction.keys()],
                         "Probability": [f"{v * 100:.0f}%" for v in prediction.values()]
                     })
-                    st.markdown("#### Full Breakdown:")
-                    st.table(df)
+                    st.table(df)  # Table now appears outside the columns
+
                 else:
                     st.error("Oops! Something went wrong. Please try again later.")
