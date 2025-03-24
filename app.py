@@ -1,43 +1,116 @@
 import streamlit as st
 from PIL import Image
 import requests
+import pandas as pd
 
 # API endpoint
 url = "https://wasteclassification-559456352882.europe-west1.run.app/predict"
 
-st.header("Time to classify your trash!! 📸")
-st.markdown("Some nice text will be added here in the future")
-st.markdown("---")
+# Inline CSS styling
+st.markdown(
+    """
+    <style>
+    .main > div {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    .big-header {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        text-align: center;
+    }
+    .sub-header {
+        font-size: 1rem;
+        color: #6c757d;
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+    .bin-color-row {
+        display: flex;
+        align-items: center;
+        margin: 0.5rem 0;
+    }
+    .bin-color-label {
+        font-size: 1.1rem;
+        margin-right: 0.5rem;
+    }
+    .bin-color-box {
+        width: 40px;
+        height: 20px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        margin-left: 0.5rem;
+    }
+    .progress-container {
+        width: 100%;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        background-color: transparent;
+    }
+    .progress-bar {
+        height: 20px;
+        border-radius: 5px;
+    }
+    .progress-label {
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+    div.stButton > button {
+        width: 100% !important;
+    }
+    div.stButton > button:hover,
+    div.stButton > button:active {
+        background-color: green !important;
+        color: white !important;
+        border: none !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
-st.markdown("### Give me some trash!👇")
-img_file_buffer = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
+# Header section
+st.markdown('<h1 class="big-header">Classify Your Waste in Seconds</h1>', unsafe_allow_html=True)
+st.markdown('<p class="sub-header">Not sure which bin to use? Upload an image, and we’ll help!</p>', unsafe_allow_html=True)
 
-st.markdown("---")
+# File uploader prompt
+st.markdown("### Upload a picture of your waste, and we’ll tell you where it belongs.")
 
+# File uploader
+img_file_buffer = st.file_uploader(
+    "Drag & drop an image here or browse your files.",
+    type=["jpg", "jpeg", "png"],
+    help="Upload an image of your waste to classify"
+)
+
+def display_custom_progress_bar(category, percentage, color):
+    progress_html = f"""
+    <div class="progress-label">{category.capitalize()}: {percentage:.0f}%</div>
+    <div class="progress-container">
+        <div class="progress-bar" style="width: {percentage}%; background-color: {color};"></div>
+    </div>
+    """
+    st.markdown(progress_html, unsafe_allow_html=True)
 
 if img_file_buffer is not None:
-    col1, col2 = st.columns(2)
+    st.markdown("---")
+    col_left, col_right = st.columns([1, 1])
 
-    with col1:
-        st.image(Image.open(img_file_buffer), caption="Your lovely piece of waste ☝️")
+    with col_left:
+        uploaded_img = Image.open(img_file_buffer)
+        st.image(uploaded_img, caption="Your lovely piece of waste ☝️", use_container_width=True)
 
-    with col2:
-        # Button to trigger the prediction
-        if st.button("Classify Trash"):
-            with st.spinner("Wait for it..."):
-                # 1. Read the image bytes
+    with col_right:
+        if st.button("Analyze Waste"):
+            with st.spinner("Scanning your waste... Hang tight!"):
                 img_bytes = img_file_buffer.getvalue()
                 files = {"img": img_bytes}
-
-                # 2. Send image to API
                 response = requests.post(url, files=files)
 
                 if response.status_code == 200:
-                    # 3. Parse prediction response
                     prediction = response.json()
-                    max_key = max(prediction, key=prediction.get)
-
-                    # 4. Define color mapping
                     category_colors = {
                         "battery": "red",
                         "biological": "brown",
@@ -50,28 +123,35 @@ if img_file_buffer is not None:
                         "plastic": "yellow",
                         "trash": "black",
                     }
-                    bin_color = category_colors.get(max_key, "red")
-
-                    # 5. Display top prediction and bin color
+                    sorted_preds = sorted(prediction.items(), key=lambda x: x[1], reverse=True)
+                    progress_bars = []
+                    top_cat, top_prob = sorted_preds[0]
+                    progress_bars.append((top_cat, top_prob, category_colors.get(top_cat, "red")))
+                    for cat, prob in sorted_preds[1:]:
+                        if prob >= 0.15:
+                            progress_bars.append((cat, prob, category_colors.get(cat, "red")))
+                    bin_color = category_colors.get(top_cat, "red")
+                    st.markdown(f"**This looks like:** {top_cat.capitalize()}")
                     st.markdown(
                         f"""
-                        <div style="display: flex; align-items: center;">
-                            <span style="font-size: 22px;">🏷️ Type of Waste:</span>
-                            <span style="margin-left: 10px; font-size: 22px;"><strong>{max_key.capitalize()}</strong></span>
-                        </div>
-                        <div style="display: flex; align-items: center; margin-top: 10px;">
-                            <span style="font-size: 22px;"">🗑️ Bin color:</span>
-                            <div style="width: 60px; height: 25px; background-color: {bin_color}; margin-left: 10px; border-radius: 5px; border: 1px solid grey;"></div>
+                        <div class="bin-color-row">
+                            <span class="bin-color-label"><strong>Suggested Bin:</strong> {bin_color.capitalize()}</span>
+                            <div class="bin-color-box" style="background-color: {bin_color};"></div>
                         </div>
                         """,
                         unsafe_allow_html=True,
                     )
-
-                    # 6. Format and display the full prediction table
-                    formatted_predictions = "\n".join([f"| {key.capitalize()} | {value * 100:.0f}% |" for key, value in prediction.items()])
-
-                    table_header = "| Category | Probability |\n| --- | --- |"
-                    st.markdown("#### Predictions:")
-                    st.markdown(f"{table_header}\n{formatted_predictions}")
+                    st.markdown("### How confident am I?")
+                    if len(progress_bars) > 2:
+                        st.info("Hmm... I’m not 100% sure, but here are my best guesses!")
+                        progress_bars = progress_bars[:3]
+                    for cat, prob, col in progress_bars:
+                        display_custom_progress_bar(cat, prob * 100, col)
+                    df = pd.DataFrame({
+                        "Category": [k.capitalize() for k in prediction.keys()],
+                        "Probability": [f"{v * 100:.0f}%" for v in prediction.values()]
+                    })
+                    st.markdown("#### Full Breakdown:")
+                    st.table(df)
                 else:
-                    st.error(f"Error {response.status_code}: {response.text}")
+                    st.error("Oops! Something went wrong. Please try again later.")
