@@ -39,7 +39,11 @@ if img_file_buffer is not None:
 
                     # 4. Define color mapping
                     category_colors = {
+                        "battery": "red",
+                        "biological": "brown",
                         "cardboard": "blue",
+                        "clothes": "red",
+                        "shoes": "red",
                         "glass": "white",
                         "metal": "yellow",
                         "paper": "blue",
