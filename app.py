@@ -4,7 +4,7 @@ import requests
 import pandas as pd
 
 # API endpoint
-url = "https://wasteclassification-559456352882.europe-west1.run.app/predict"
+url = "https://wasteclassification-273545301943.europe-west1.run.app/predict"
 
 # Inline CSS styling
 st.markdown(
@@ -130,16 +130,37 @@ if st.session_state.uploaded_image:
                 "cardboard": "blue",
                 "clothes": "red",
                 "shoes": "red",
-                "glass": "white",
+                "glass": "#D3D3D3",
                 "metal": "yellow",
                 "paper": "blue",
                 "plastic": "yellow",
                 "trash": "black",
+                "glass_brown": "brown",
+                "glass_green": "green",
+                "glass_transparent": "#D3D3D3",
             }
-            default_color = "red"
+            default_color = "grey"
+
+            # Category bin mapping
+            category_bin = {
+                "battery": "Battery disposal",
+                "biological": "Bio bin",
+                "cardboard": "Blue bin",
+                "clothes": "Red cross donation",
+                "shoes": "Red cross donatio",
+                "glass": "Glass container",
+                "metal": "Yellow bin",
+                "paper": "Blue bin",
+                "plastic": "Yellow bin",
+                "trash": "Black bin",
+                "glass_brown": "Brown glass container",
+                "glass_green": "Green glass container",
+                "glass_transparent": "White glass container",
+            }
+            default_bin = "trash"
 
             # Sort and filter predictions
-            sorted_preds = [(cat, prob, category_colors.get(cat, default_color))
+            sorted_preds = [(cat, prob, category_colors.get(cat, default_color), category_bin.get(cat, default_bin))
                             for cat, prob in sorted(response_data.items(), key=lambda x: x[1], reverse=True) if prob >= 0.15]
 
             if not sorted_preds:
@@ -147,11 +168,12 @@ if st.session_state.uploaded_image:
                 st.stop()
 
             # Suggested bin
-            top_cat, top_prob, bin_color = sorted_preds[0]
+            top_cat, top_prob, bin_color, bin_type = sorted_preds[0]
+
             st.markdown(f"**This looks like:** {top_cat.capitalize()}")
             st.markdown(f"""
             <div class="bin-color-row">
-                <span><strong>Suggested Bin:</strong> {bin_color.capitalize()}</span>
+                <span><strong>Suggested Bin:</strong> {bin_type}</span>
                 <div class="bin-color-box" style="background-color: {bin_color};"></div>
             </div>
             """, unsafe_allow_html=True)
@@ -163,7 +185,7 @@ if st.session_state.uploaded_image:
                 sorted_preds = sorted_preds[:3]
 
             # Display progress bars
-            for cat, prob, col in sorted_preds:
+            for cat, prob, col, bin_type in sorted_preds:
                 display_custom_progress_bar(cat, prob * 100, col)
 
             # Full breakdown table
