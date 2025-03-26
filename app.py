@@ -66,6 +66,10 @@ st.markdown(
         color: white !important;
         border: none !important;
     }
+    .highlight-text {
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -147,7 +151,7 @@ if st.session_state.uploaded_image:
                 "biological": "Bio bin",
                 "cardboard": "Blue bin",
                 "clothes": "Red cross donation",
-                "shoes": "Red cross donatio",
+                "shoes": "Red cross donation",
                 "glass": "Glass container",
                 "metal": "Yellow bin",
                 "paper": "Blue bin",
@@ -170,7 +174,10 @@ if st.session_state.uploaded_image:
             # Suggested bin
             top_cat, top_prob, bin_color, bin_type = sorted_preds[0]
 
-            st.markdown(f"**This looks like:** {top_cat.capitalize()}")
+            st.markdown(f'<p style="font-size:24px;">This looks like: <strong>{top_cat.capitalize()}</strong></p>', unsafe_allow_html=True)
+
+
+
             st.markdown(f"""
             <div class="bin-color-row">
                 <span><strong>Suggested Bin:</strong> {bin_type}</span>
@@ -188,14 +195,13 @@ if st.session_state.uploaded_image:
             for cat, prob, col, bin_type in sorted_preds:
                 display_custom_progress_bar(cat, prob * 100, col)
 
-            # Full breakdown table
-            st.markdown("---")
-            st.markdown("### Full Breakdown:")
-            df = pd.DataFrame({
-                "Category": [k.capitalize() for k in response_data.keys()],
-                "Probability": [f"{v * 100:.0f}%" for v in response_data.values()]
-            })
-            st.table(df)
+            # Collapsible breakdown table
+            with st.expander("🔍 Full Breakdown (Click to Expand)"):
+                df = pd.DataFrame({
+                    "Category": [k.capitalize() for k in response_data.keys()],
+                    "Probability": [f"{v * 100:.0f}%" for v in response_data.values()]
+                })
+                st.table(df)
 
     # ✅ **Reset file uploader** to allow a new image to be uploaded
     st.session_state.uploaded_image = None
