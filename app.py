@@ -4,7 +4,9 @@ import requests
 import pandas as pd
 
 # API endpoint
-url = "https://wasteclassification-273545301943.europe-west1.run.app/predict"
+# API endpoint
+url = "https://waste-api-42960119981.europe-west1.run.app/predict"
+
 
 # Inline CSS styling
 st.markdown(
@@ -166,6 +168,9 @@ if st.session_state.uploaded_image:
             # Sort and filter predictions
             sorted_preds = [(cat, prob, category_colors.get(cat, default_color), category_bin.get(cat, default_bin))
                             for cat, prob in sorted(response_data.items(), key=lambda x: x[1], reverse=True) if prob >= 0.15]
+            #sorted_preds = [(cat, float(prob), category_colors.get(cat, default_color), category_bin.get(cat, default_bin))
+                            #for cat, prob in sorted(response_data.items(), key=lambda x: float(x[1]), reverse=True) if float(prob) >= 0.15]
+
 
             if not sorted_preds:
                 st.error("No valid classification results found.")
